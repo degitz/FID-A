@@ -61,6 +61,9 @@ dOut.data=twix_obj.image();
 version=twix_obj.image.softwareVersion;
 sqzSize=twix_obj.image.sqzSize; 
 sqzDims=twix_obj.image.sqzDims;
+file_info = dir(twix_obj.image.filename); %This line and the next two were added 05/23/24
+fname = twix_obj.image.filename;
+date_time = file_info.date;
 
 
 %find out what sequence, the data were acquired with.  If this is a
@@ -111,14 +114,16 @@ if isSpecial ||... %Catches Ralf Mekle's and CIBM version of the SPECIAL sequenc
                                                                         %not being handled correctly before, but are handled fine now 
                                                                         %with this new condition.                                                                     
     squeezedData=squeeze(dOut.data);
-    if twix_obj.image.NCol>1 && twix_obj.image.NCha>1
-        data(:,:,:,1)=squeezedData(:,:,[1:2:end-1]);
-        data(:,:,:,2)=squeezedData(:,:,[2:2:end]);
-        sqzSize=[sqzSize(1) sqzSize(2) sqzSize(3)/2 2];
-    elseif twix_obj.image.NCol>1 && twix_obj.image.NCha==1
-        data(:,:,1)=squeezedData(:,[1:2:end-1]);
-        data(:,:,2)=squeezedData(:,[2:2:end]);
-        sqzSize=[sqzSize(1) sqzSize(2)/2 2];
+    if twix_obj.image.NCol>1 % Reorganized if statements
+        if twix_obj.image.NCha>1
+            data(:,:,:,1)=squeezedData(:,:,[1:2:end-1]);
+            data(:,:,:,2)=squeezedData(:,:,[2:2:end]);
+            sqzSize=[sqzSize(1) sqzSize(2) sqzSize(3)/2 2];
+        elseif twix_obj.image.NCha==1
+            data(:,:,1)=squeezedData(:,[1:2:end-1]);
+            data(:,:,2)=squeezedData(:,[2:2:end]);
+            sqzSize=[sqzSize(1) sqzSize(2)/2 2];
+        end
     end
     if isjnseq
         sqzDims{end+1}='Set';
@@ -157,15 +162,16 @@ fids=squeeze(data);
 if isSiemens && (strcmp(version,'vd') || strcmp(version,'ve')) && strcmp(sqzDims{end},'Phs')
     sqzDims=sqzDims(1:end-1);
     sqzSize=sqzSize(1:end-1);
-    if ndims(fids)==4
-        fids=fids(:,:,:,2);
-        fids=squeeze(fids);
-    elseif ndims(fids)==3
-        fids=fids(:,:,2);
-        fids=squeeze(fids);
-    elseif ndims(fids)==2
-        fids=fids(:,2);
-        fids=squeeze(fids);
+    switch ndims(fids) % changed to switch/case - JND 12/17/24
+        case 4
+            fids=fids(:,:,:,2);
+            fids=squeeze(fids);
+        case 3
+            fids=fids(:,:,2);
+            fids=squeeze(fids);
+        case 2
+            fids=fids(:,2);
+            fids=squeeze(fids);
     end
 end
 
@@ -204,15 +210,16 @@ if isMinn_dkd
         wRefs=true;
     end
    
-    if ndims(fids)==4
-        fids_w=fids(:,:,:,end-(nRefs-1):end);
-        fids=fids(:,:,:,end-(nRefs+Naverages-1):end-nRefs);
-    elseif ndims(fids)==3
-        fids_w=fids(:,:,end-(nRefs-1):end);
-        fids=fids(:,:,end-(nRefs+Naverages-1):end-nRefs);
-    elseif ndims(fids)==2
-        fids_w=fids(:,end-(nRefs-1):end);
-        fids=fids(:,end-(nRefs+Naverages-1):end-nRefs);
+    switch ndims(fids) % changed to switch/case - JND 12/17/24
+        case 4
+            fids_w=fids(:,:,:,end-(nRefs-1):end);
+            fids=fids(:,:,:,end-(nRefs+Naverages-1):end-nRefs);
+        case 3
+            fids_w=fids(:,:,end-(nRefs-1):end);
+            fids=fids(:,:,end-(nRefs+Naverages-1):end-nRefs);
+        case 2
+            fids_w=fids(:,end-(nRefs-1):end);
+            fids=fids(:,end-(nRefs+Naverages-1):end-nRefs);
     end
 end
 
@@ -238,7 +245,7 @@ if isColumbia_sLASER
     if ndims(fids)==4
         fids_w=fids(:,:,1:nRefs,1);
         fids=fids(:,:,:,2);
-    elseif ndims(fids==3)
+    elseif ndims(fids)==3
         fids_w=fids(:,1:nRefs,1);
         fids=fids(:,:,2);
     end
@@ -259,7 +266,7 @@ if ~isempty(dims.t)
     dimsToIndex=dimsToIndex(dimsToIndex~=dims.t);
 else
     dims.t=0;
-    error('ERROR:  Spectrom contains no time domain information!!');
+    error('ERROR: Spectrum contains no time domain information!!');
 end
 
 %Now index the dimension of the coil channels
@@ -358,83 +365,40 @@ end
 %   3) averages.
 %   4) subSpecs.
 %   5) extras.
-if length(sqzDims)==5
-    fids=permute(fids,[dims.t dims.coils dims.averages dims.subSpecs dims.extras]);
-    dims.t=1;dims.coils=2;dims.averages=3;dims.subSpecs=4;dims.extras=5;
+
+% Simplified permutations - JND 12/17/24
+i = 1;
+dshape(i) = dims.t;
+dims.t = i;
+if dims.coils ~= 0
+    i = i+1;
+    dshape(i) = dims.coils;
+    dims.coils = i;
+end
+if dims.averages ~= 0
+    i = i+1;
+    dshape(i) = dims.averages;
+    dims.averages = i;
+end
+if dims.subSpecs ~= 0
+    i = i+1;
+    dshape(i) = dims.subSpecs;
+    dims.subSpecs = i;
+end
+if dims.extras ~= 0
+    i = i+1;
+    dshape(i) = dims.extras;
+    dims.extras = i;
+end
+if isscalar(sqzDims)
+    fids = permute(fids,[dims.t 2]); % Changed from [dims.t] to [dims.t 2] by JND 12/15/2023
     if wRefs
-        fids_w=permute(fids_w,[dims.t dims.coils dims.averages dims.subSpecs dims.extras]);
+        fids_w = permute(fids_w,[dims.t 2]);
     end
-elseif length(sqzDims)==4
-    if dims.extras==0
-        fids=permute(fids,[dims.t dims.coils dims.averages dims.subSpecs]);
-        dims.t=1;dims.coils=2;dims.averages=3;dims.subSpecs=4;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.coils dims.averages dims.subSpecs]);
-        end
-    elseif dims.subSpecs==0
-        fids=permute(fids,[dims.t dims.coils dims.averages dims.extras]);
-        dims.t=1;dims.coils=2;dims.averages=3;dims.subSpecs=0;dims.extras=4;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.coils dims.averages dims.extras]);
-        end
-    elseif dims.averages==0
-        fids=permute(fids,[dims.t dims.coils dims.subSpecs dims.extras]);
-        dims.t=1;dims.coils=2;dims;averages=0;dims.subSpecs=3;dims.extras=4;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.coils dims.subSpecs dims.extras]);
-        end
-    elseif dims.coils==0
-        fids=permute(fids,[dims.t dims.averages dims.subSpecs dims.extras]);
-        dims.t=1;dims.coils=0;dims.averages=2;dims.subSpecs=3;dims.extras=4;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.averages dims.subSpecs dims.extras]);
-        end
-    end
-elseif length(sqzDims)==3
-    if dims.extras==0 && dims.subSpecs==0
-        fids=permute(fids,[dims.t dims.coils dims.averages]);
-        dims.t=1;dims.coils=2;dims.averages=3;dims.subSpecs=0;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.coils dims.averages]);
-        end
-    elseif dims.extras==0 && dims.averages==0
-        fids=permute(fids,[dims.t dims.coils dims.subSpecs]);
-        dims.t=1;dims.coils=2;dims.averages=0;dims.subSpecs=3;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.coils dims.subSpecs]);
-        end
-    elseif dims.extras==0 && dims.coils==0
-        fids=permute(fids,[dims.t dims.averages dims.subSpecs]);
-        dims.t=1;dims.coils=0;dims.averages=2;dims.subSpecs=3;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.averages dims.subSpecs]);
-        end
-    end
-elseif length(sqzDims)==2
-    if dims.extras==0 && dims.subSpecs==0 && dims.averages==0
-        fids=permute(fids,[dims.t dims.coils]);
-        dims.t=1;dims.coils=2;dims.averages=0;dims.subSpecs=0;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.coils]);
-        end
-    elseif dims.extras==0 && dims.subSpecs==0 && dims.coils==0
-        fids=permute(fids,[dims.t dims.averages]);
-        dims.t=1;dims.coils=0;dims.averages=2;dims.subSpecs=0;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.averages]);
-        end
-    elseif dims.extras==0 && dims.averages==0 && dims.coils==0
-        fids=permute(fids,[dims.t dims.subSpecs]);
-        dims.t=1;dims.coils=0;dims.averages=0;dims.subSpecs=2;dims.extras=0;
-        if wRefs
-            fids_w=permute(fids_w,[dims.t dims.subSpecs]);
-        end
-    end
-elseif length(sqzDims)==1
-    fids=permute(fids,[dims.t]);
-    dims.t=1;dims.coils=0;dims.averages=0;dims.subSpecs=0;dims.extras=0;
+else
+    fids = permute(fids,dshape);
     if wRefs
-        fids_w=permute(fids_w,[dims.t]);
+        fids_w = permute(fids_w,dshape);
     end
 end
 
@@ -612,6 +576,7 @@ out.spectralwidth=spectralwidth;
 out.dwelltime=dwelltime;
 out.txfrq=txfrq;
 out.date=date;
+out.date_time = date_time;
 out.dims=dims;
 out.Bo=Bo;
 out.averages=averages;
@@ -624,6 +589,8 @@ out.tr=TR/1000;
 out.pointsToLeftshift=leftshift;
 out.nucleus=nucleus;
 out.gamma=gamma;
+out.fname = fname; % Added 05/23/24
+out.hdr = twix_obj.hdr; % Added by EV 10/30/23
 
 
 %FILLING IN THE FLAGS
