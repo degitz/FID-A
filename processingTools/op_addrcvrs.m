@@ -1,5 +1,7 @@
 % op_addrcvrs.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [out,fids_presum,specs_presum,coilcombos]=op_addrcvrs(in,point,mode,coilcombos);
@@ -107,36 +109,37 @@ else
     ph=ones(in.sz);
     sig=ones(in.sz);
     
-    if in.dims.coils==1
-        for n=1:in.sz(1)
-            ph(n,:)=phs(n)*ph(n,:);
-            sig(n,:)=sigs(n)*sig(n,:);
-        end
-    elseif in.dims.coils==2
-        for n=1:in.sz(2)
-            ph(:,n,:)=phs(n)*ph(:,n,:);
-            sig(:,n,:)=sigs(n)*sig(:,n,:);
-        end
-    elseif in.dims.coils==3
-        for n=1:in.sz(3)
-            ph(:,:,n,:)=phs(n)*ph(:,:,n,:);
-            sig(:,:,n,:)=sigs(n)*sig(:,:,n,:);
-        end
-    elseif in.dims.coils==4
-        for n=1:in.sz(4)
-            ph(:,:,:,n,:)=phs(n)*ph(:,:,:,n,:);
-            sig(:,:,:,n,:)=sigs(n)*sig(:,:,:,n,:);
-        end
-    elseif in.dims.coils==5
-        for n=1:in.sz(5)
-            ph(:,:,:,:,n)=phs(n)*ph(:,:,:,:,n);
-            sig(:,:,:,:,n)=sigs(n)*sig(:,:,:,:,n);
-        end
+    switch in.dims.coils % Changed to switch/case - JND 12/5/24
+        case 1
+            for n=1:in.sz(1)
+                ph(n,:)=phs(n)*ph(n,:);
+                sig(n,:)=sigs(n)*sig(n,:);
+            end
+        case 2
+            for n=1:in.sz(2)
+                ph(:,n,:)=phs(n)*ph(:,n,:);
+                sig(:,n,:)=sigs(n)*sig(:,n,:);
+            end
+        case 3
+            for n=1:in.sz(3)
+                ph(:,:,n,:)=phs(n)*ph(:,:,n,:);
+                sig(:,:,n,:)=sigs(n)*sig(:,:,n,:);
+            end
+        case 4
+            for n=1:in.sz(4)
+                ph(:,:,:,n,:)=phs(n)*ph(:,:,:,n,:);
+                sig(:,:,:,n,:)=sigs(n)*sig(:,:,:,n,:);
+            end
+        case 5
+            for n=1:in.sz(5)
+                ph(:,:,:,:,n)=phs(n)*ph(:,:,:,:,n);
+                sig(:,:,:,:,n)=sigs(n)*sig(:,:,:,:,n);
+            end
     end
     
     
     %now apply the phases by multiplying the data by exp(-i*ph);
-    fids=in.fids.*exp(-i*ph*pi/180);
+    fids=in.fids.*exp(-1i*ph*pi/180);
     fids_presum=fids;
     specs_presum=fftshift(ifft(fids,[],in.dims.t),in.dims.t);
     
