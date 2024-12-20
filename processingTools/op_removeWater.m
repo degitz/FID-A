@@ -1,5 +1,7 @@
 %op_removeWater.m
 %Jay Hennessy, McGill University 2017.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 %
 % USAGE:
 % [out, K, wppm, amp, alpha, ph, model]=op_removeWater(in,wlim,Kinit,M,plot_bool);
@@ -76,7 +78,7 @@ while sum(find(amp==0))>=1 || sum(isnan(amp) >= 1)
     Sk = S(1:K,1:K);
     Vk = V(:,1:K);
     
-    % get he eigenvalues of the transform matrix
+    % get the eigenvalues of the transform matrix
     Utk = Uk(2:end,:);
     Ubk = Uk(1:end-1,:);
     Eh = Utk\Ubk;
@@ -102,7 +104,7 @@ while sum(find(amp==0))>=1 || sum(isnan(amp) >= 1)
 
     count = count+1;
     if K<2
-        display('####### Could not find a suitable number of components ########');
+        disp('####### Could not find a suitable number of components ########');
         break;
     end
 end
@@ -154,7 +156,7 @@ end
 
 
 if ~sum(amp(water))
-    display('##########  The fit did not work. Try reducing the number of components K.  #############');
+    disp('##########  The fit did not work. Try reducing the number of components K.  #############');
 end
 
 % set output
