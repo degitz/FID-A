@@ -1,5 +1,8 @@
 %op_rmbadaverages.m
 %Jamie Near, McGill University 2014.
+%Edits from
+%   Edith Touchet-Valle, Texas A&M University, 2024.
+%   Jacob Degitz, Texas A&M University 2024.
 %
 %USAGE:
 %[out,metric,badAverages]=op_rmbadaverages(in,nsd,domain);
@@ -41,7 +44,7 @@ if nargin<3
 end
 
 %first, make a metric by subtracting all averages from the first average, 
-%and then taking the sum of all all the spectral points.  
+%and then taking the sum of all the spectral points.  
 if in.dims.subSpecs>0
     SS=in.sz(in.dims.subSpecs);
 else
@@ -79,11 +82,11 @@ zmetric=(metric-avg)./stdev;
 for m=1:SS
     
     P(m,:)=polyfit([1:in.sz(in.dims.averages)]',zmetric(:,m),2);
-    figure('position',[0 (m-1)*500 560 420]);
+    flik=figure('Name', 'Unlikeness', 'NumberTitle', 'off'); % Changed figure name, removed position & number title) - JND 8/27/2024
     plot([1:in.sz(in.dims.averages)],zmetric(:,m),'.',...
         [1:in.sz(in.dims.averages)],polyval(P(m,:),[1:in.sz(in.dims.averages)]),...
         [1:in.sz(in.dims.averages)],(polyval(P(m,:),[1:in.sz(in.dims.averages)])'+nsd),':');
-    xlabel('Scan Number');
+    xlabel('Scan Number'); axis tight;
     ylabel('Unlikeness Metric (z-score)');
     title('Metric for rejection of motion corrupted scans');
 end
