@@ -1,5 +1,8 @@
 % op_autophase.m
 % Jamie Near, McGill University 2015.
+% Edits from
+%   Edith Touchet-Valle, Texas A&M University, 2024.
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [out,phaseShift]=op_autophase(in,ppmmin,ppmmax,ph,dimNum);
@@ -22,14 +25,15 @@
 
 function [out,phShft]=op_autophase(in,ppmmin,ppmmax,ph,dimNum);
 
-
-if in.dims.coils>0
-    error('ERROR:  Can not operate on data with multilple coils!  ABORTING!!')
+if ~isfield(in.dims, 'coils')
+    in.dims.coils = 0;
 end
-if in.dims.averages>0
-    error('ERROR:  Can not operate on data with multiple averages!  ABORTING!!');
+if ~isfield(in.dims, 'averages')
+    in.dims.averages = 0;
 end
-if in.dims.extras>0
+if ~isfield(in.dims, 'extras')
+    in.dims.extras = 0;
+elseif in.dims.extras>0
     error('ERROR:  Can not operate on data with extras dimension!  ABORTING!!');
 end
 if in.dims.subSpecs>0
@@ -61,9 +65,13 @@ in_zp=op_freqrange(in_zp,ppmmin,ppmmax);
 %Find the ppm of the maximum peak magnitude within the given range:
 ppmindex=find(abs(in_zp.specs(:,dimNum))==max(abs(in_zp.specs(:,dimNum))));
 
-%now do automatic zero-order phase correction (Use Creatine Peak):
+%now do automatic zero-order phase correction:
 ph0=-phase(in_zp.specs(ppmindex,dimNum))*180/pi;
 
 %Now phase shift the dataset so that the desired peak has the correct phase:
 phShft = ph0 + ph;
 out=op_addphase(in,phShft);
+
+%FILLING IN THE FLAGS
+out.flags = in.flags;
+out.flags.phasecorrected = 1;
