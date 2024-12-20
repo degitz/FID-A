@@ -1,5 +1,7 @@
 % op_filter.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [out,lor]=op_filter(in,lb);
@@ -51,20 +53,17 @@ else
     %do this, we have to use the ndgrid function, which is essentially the same
     %as the meshgrid function, except in multiple dimensions.  b, c, and d are
     %dummy variables and are not used.
-    if length(in.sz)==1
-        fil=lor;
-    end
-    if length(in.sz)==2
-        [fil,b]=ndgrid(lor,p{2});
-    end
-    if length(in.sz)==3
-        [fil,b,c]=ndgrid(lor,p{2},p{3});
-    end
-    if length(in.sz)==4
-        [fil,b,c,d]=ndgrid(lor,p{2},p{3},p{4});
-    end
-    if length(in.sz)==5
-        [fil,b,c,d,e]=ndgrid(lor,p{2},p{3},p{4},p{5});
+    switch length(in.sz) % Combined if statements into switch/case - JND 9/26/24
+        case 1
+            fil=lor;
+        case 2
+            [fil,b]=ndgrid(lor,p{2});
+        case 3
+            [fil,b,c]=ndgrid(lor,p{2},p{3});
+        case 4
+            [fil,b,c,d]=ndgrid(lor,p{2},p{3},p{4});
+        case 5
+            [fil,b,c,d,e]=ndgrid(lor,p{2},p{3},p{4},p{5});
     end
     
     %Now multiply the data by the filter array.

@@ -1,5 +1,7 @@
 % op_getSNR.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [SNR]=op_getSNR(in,NAAppmmin,NAAppmmax,noiseppmmin,noiseppmmax,suppressPlots);
@@ -58,8 +60,12 @@ if ~suppressPlots
 
     figure
     plot(in.ppm,real(in.specs));
-    noiseppmmin=input('input lower ppm limit for noise: ');
-    noiseppmmax=input('input upper ppm limit for noise: ');
+    if nargin < 5
+        noiseppmmax=input('input upper ppm limit for noise: ');
+        if nargin < 4
+            noiseppmmin=input('input lower ppm limit for noise: ');
+        end
+    end
 end
 
 %NOW FIND THE STANDARD DEVIATION OF THE NOISE:
@@ -67,22 +73,23 @@ noisewindow=in.specs(in.ppm>noiseppmmin & in.ppm<noiseppmmax);
 ppmwindow2=in.ppm(in.ppm>noiseppmmin & in.ppm<noiseppmmax)';
 
 P=polyfit(ppmwindow2,noisewindow,2);
+
+% Calculate SNR
 noise=noisewindow-polyval(P,ppmwindow2);
-
-if ~suppressPlots
-    figure
-    plot(ppmwindow2,real(noisewindow),...
-        ppmwindow2,real(polyval(P,ppmwindow2)),...
-        ppmwindow2,real(noise));
-end
-
-signal=(maxNAA-mean(real(noisewindow))); %Removes DC offset
-
 noisesd=std(real(noise));
-
+signal=(maxNAA-mean(real(noisewindow))); %Removes DC offset
 %SNR=maxNAA/noisesd
 SNR=signal/noisesd;
 
 if ~suppressPlots
+    figure;
+    plot(ppmwindow,abs(real(NAAwindow)));
+
+    figure
+    plot(in.ppm,real(in.specs));
+    figure
+    plot(ppmwindow2,real(noisewindow),...
+        ppmwindow2,real(polyval(P,ppmwindow2)),...
+        ppmwindow2,real(noise));
     disp(['The calculated signal-to-noise ratio is:  ' num2str(SNR) '.']);
 end
