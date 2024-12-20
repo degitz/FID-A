@@ -19,13 +19,15 @@
 % 
 % INPUTS:
 % filename   = filename of Siemens twix data to load.
+% KeepOS     = *optional* boolean flag to keep oversampling
+% ZIP        = *optional* boolean flag to enable zero interpolation padding
 %
 % OUTPUTS:
 % out        = Input dataset in FID-A structure format.
 % out_w      = Input water reference data (only available for some
 %               sequences.  This will be empty for others).
 
-function [out,out_w]=io_loadspec_twix(filename);
+function [out,out_w]=io_loadspec_twix(filename, varargin);
 
 
 %read in the data using the new mapVBVD.  This code has been adapted to 
@@ -36,7 +38,16 @@ function [out,out_w]=io_loadspec_twix(filename);
 %whereas for a multi-RAID file, mapVBVD will output a cell array of structs.
 %This code assumes that the data of interest is in the last element of the 
 %cell array (possibly a bad assumption under some circumstances):
-twix_obj=mapVBVD(filename);
+
+[rmosFLAG, zipFLAG] = parseInputs(varargin{:}); % JND 12/19/2024
+
+if rmosFLAG % Added - JND 08/20/24
+    twix_obj=mapVBVD(filename, 'rmos');
+    twix_obj.image.flagRemoveOS = true; % to remove oversampling ADDED BY EV 01/02/24 for testing
+else
+    twix_obj=mapVBVD(filename);
+end
+
 if isstruct(twix_obj)
     disp('single RAID file detected.');
     RaidLength=1;
@@ -433,21 +444,54 @@ if wRefs
     sz_w=size(fids_w);
 end
 
+% ZIP data - JND 08/20/2024
+if zipFLAG
+    psize = zeros(size(sz)); psize(1) = sz(1);
+    fids = padarray(fids, psize, 0, 'post');
+
+    % Update data size
+    sz(1) = size(fids,1);
+
+    if wRefs
+        fids_w = padarray(fids_w, psize, 0, 'post');
+        sz_w(1) = size(fids_w,1);
+    end
+end
+
 %Now take fft of time domain to get fid:
 specs=fftshift(ifft(fids,[],dims.t),dims.t);
 if wRefs
     specs_w=fftshift(ifft(fids_w,[],dims.t),dims.t);
 end
     
+% Remove excess range if OS not removed
+if ~rmosFLAG
+    % Trim data
+    specs = specs((sz(1)/4)+1:(sz(1)*3/4),:,:);
+    fids = fft(ifftshift(specs,dims.t),[],dims.t);
+
+    % Update data size
+    sz(1) = size(specs,1);
+
+    if wRefs
+        specs_w = specs_w((sz_w(1)/4)+1:(sz_w(1)*3/4),:,:);
+        fids_w = fft(ifftshift(specs_w,dims.t),[],dims.t);
+        sz_w(1) = size(specs_w,1);
+    end
+end
 
 %Now get relevant scan parameters:*****************************
 
 %Get Spectral width and Dwell Time
-dwelltime = twix_obj.hdr.MeasYaps.sRXSPEC.alDwellTime{1}*1e-9;  %Franck Lamberton
+if rmosFLAG
+    dwelltime = (twix_obj.hdr.MeasYaps.sRXSPEC.alDwellTime{1}*1e-9)*twix_obj.hdr.Dicom.flReadoutOSFactor;  %Franck Lamberton % Added *2 on by JND 1/12/2024
+else
+    dwelltime = (twix_obj.hdr.MeasYaps.sRXSPEC.alDwellTime{1}*1e-9)*twix_obj.hdr.Dicom.flReadoutOSFactor/2;  %Franck Lamberton % Added *2 on by JND 1/12/2024
+end
 spectralwidth=1/dwelltime;
     
 %Get TxFrq
-txfrq=twix_obj.hdr.Config.Frequency;
+txfrq=twix_obj.hdr.Meas.Frequency;
 
 
 %Get Date
@@ -524,7 +568,11 @@ if isWIP529 || isWIP859 || (isSiemens && contains(sequence,'svs_se'))
 elseif isSiemens
     leftshift = twix_obj.image.freeParam(1);
 elseif isMinn_eja || isMinn_dkd
-    leftshift = twix_obj.image.iceParam(5,1);
+    if size(twix_obj.image.iceParam,1) > 4 % EV 03/24/24 added this because some sequences have diff sizes
+        leftshift = twix_obj.image.iceParam(5,1);
+    else
+        leftshift = twix_obj.image.iceParam(4,1);
+    end
 else
     leftshift = twix_obj.image.freeParam(1);
 end
@@ -647,5 +695,44 @@ else
     out_w=struct();
 end
 
-
+function [rmosFLAG, zipFLAG] = parseInputs(varargin)
+    CHECK_os = true; % Added - JND 08/20/24
+    CHECK_zip = true;
+    i = 1;
+    while i < nargin
+        % Check for OS input
+        if strcmpi(varargin{i}, 'KeepOS') && CHECK_os
+            % Remove input from options
+            CHECK_os = false;
+    
+            % Ensure it is a logical
+            if ~islogical(varargin{i+1})
+                error('OS option must be logical.')
+            else
+                % Save variable
+                rmosFLAG = ~varargin{i+1};
+            end
+    
+        % Check for ZIP input
+        elseif strcmpi(varargin{i}, 'ZIP') && CHECK_zip
+            % Remove input from options
+            CHECK_zip = false;
+    
+            % Ensure it is a logical
+            if ~islogical(varargin{i+1})
+                error('ZIP option must be logical.')
+            else
+                % Save variable
+                zipFLAG = varargin{i+1};
+            end
+        end
+    
+        % Shift forward indexer
+        i = i+1;
+    end
+    
+    % Add default options based on which inputs weren't grabbed
+    if CHECK_os; rmosFLAG = true; end
+    if CHECK_zip; zipFLAG = false; end
+    
 %DONE
