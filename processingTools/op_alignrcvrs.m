@@ -1,5 +1,7 @@
 % op_alignrcvrs.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [out,coilcombos]=op_alignrcvrs(in,point,mode,coilcombos);
@@ -104,7 +106,7 @@ ph=repmat(ph,replicate);
 
 
 %now apply the phases by multiplying the data by exp(-i*ph);
-fids=in.fids.*exp(-i*ph*pi/180);
+fids=in.fids.*exp(-1i*ph*pi/180);
 fids_presum=fids;
 specs_presum=fftshift(ifft(fids,[],in.dims.t),in.dims.t);
 
