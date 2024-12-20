@@ -40,7 +40,7 @@ if nargin<6
 end
 
 
-f=(ppm'-ppm0)*42.577*B0; %Frequency scale in Hz;  Assumes proton.
+f = (ppm'-ppm0)*(txfrq); %Frequency scale in Hz; 
 rep=size(specs);
 rep(1)=1;
 f=repmat(f,rep);
