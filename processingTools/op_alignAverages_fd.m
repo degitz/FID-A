@@ -1,5 +1,7 @@
 % op_alignAverages_fd.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [out,fs,phs]=op_alignAverages_fd(in,minppm,maxppm,tmax,med,ref);
@@ -16,17 +18,21 @@
 % minppm	= Minimum of frequency range (ppm).
 % maxppm	= Maximum of frequnecy range (ppm).
 % tmax      = Maximum time (s) in time domain to use for alignment.
-% med       = Align averages to the median of the averages? ('y','n', 'a' or 
-%             'r').  If you select 'n', all averages will be aligned to a 
-%             single average.  The average chosen as the reference 
-%             average will be the one with the lowest 'unlikeness' metric 
-%             (see 'op_rmbadaverages.m').  If you select 'y', all
-%             averages will be aligned to the median of the averages.  If
-%             you select 'a', all averages will be aligned to the average
-%             of the averages.  If you select 'r', all averages will be 
-%             aligned to an externally provided reference spectrum.
+%             (Optional.  Default is the time at which SNR drops below 5)
+% med       = Align averages to the median of the averages? ('y','n', 'a', or 
+%             'r'). (Optional.  Default = 'n').  
+%               - If you select 'n', all averages will be aligned to a 
+%                 single average. The average chosen as the reference 
+%                 average will be the one with the lowest 'unlikeness' 
+%                 metric (see 'op_rmbadaverages.m'). 
+%               - If select 'y', all averages will be aligned to the median
+%                 of the averages.
+%               - If you select 'a', all averages will be aligned to the 
+%                 average of the averages.
+%               - If you select 'r', all averages will be aligned to an
+%                 externally provided reference spectrum.
 % ref       = An externally provided reference spectrum that you would like
-%             to align everything to (Required only if med = 'r').  
+%             to align everything to (Required only if med = 'r').   
 %
 % OUTPUTS:
 % out       = Output following alignment of averages.  

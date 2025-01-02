@@ -1,5 +1,7 @@
 % op_alignAverages.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
 % [out,fs,phs]=op_alignAverages(in,tmax,med,ref);
@@ -18,17 +20,19 @@
 % INPUTS:
 % in        = Input data structure.
 % tmax      = Maximum time (s) in time domain to use for alignment.
-%             (Optional.  Default is the time at which SNR drops below 5)
+%             (Optional. Default is the time at which SNR drops below 5)
 % med       = Align averages to the median of the averages? ('y','n', 'a', or 
-%             'r').  (Optional.  Default = 'n').  If you select 'n', all 
-%             averages will be aligned to a single average.  The average 
-%             chosen as the reference average will be the one with the 
-%             lowest 'unlikeness' metric (see 'op_rmbadaverages.m').  If 
-%             select 'y', all averages will be alinged to the median of
-%             the averages.  If you select 'a', all averages will be 
-%             aligned to the average of the averages.  If you select 'r', 
-%             all averages will be aligned to an externally provided 
-%             reference spectrum.
+%             'r'). (Optional.  Default = 'n').  
+%               - If you select 'n', all averages will be aligned to a 
+%                 single average. The average chosen as the reference 
+%                 average will be the one with the lowest 'unlikeness' 
+%                 metric (see 'op_rmbadaverages.m'). 
+%               - If select 'y', all averages will be aligned to the median
+%                 of the averages.
+%               - If you select 'a', all averages will be aligned to the 
+%                 average of the averages.
+%               - If you select 'r', all averages will be aligned to an
+%                 externally provided reference spectrum.
 % ref       = An externally provided reference spectrum that you would like
 %             to align everything to (Required only if med = 'r').  
 %
