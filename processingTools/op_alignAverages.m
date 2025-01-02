@@ -54,8 +54,8 @@ if in.dims.averages==0
     out=in;
     fs=0;
     phs=0;
-
-else
+    return
+end
 
     parsFit=[0,0];
     
@@ -160,8 +160,6 @@ else
     out.flags=in.flags;
     out.flags.writtentostruct=1;
     out.flags.freqcorrected=1;
-    
-end
 
 
     function y=op_freqPhaseShiftComplexNest(pars,input)

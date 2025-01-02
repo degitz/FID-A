@@ -54,6 +54,15 @@ if nargin<6
     end
 end
 
+if in.dims.averages==0
+    %DO NOTHING
+    disp('WARNING:  No averages found.  Returning input without modification!');
+    out=in;
+    fs=0;
+    phs=0;
+    return
+end
+
 %%% Initialize data
 parsFit=[0,0];
 
@@ -127,6 +136,7 @@ out.specs=specs;
 out.flags=in.flags;
 out.flags.writtentostruct=1;
 out.flags.freqcorrected=1;
+
 
     function y=op_freqPhaseShiftComplexRangeNest(pars,input)
         f=pars(1);     %Frequency Shift [Hz]
