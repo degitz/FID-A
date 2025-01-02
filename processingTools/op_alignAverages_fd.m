@@ -75,13 +75,14 @@ fids=zeros(in.sz(in.dims.t),1,B);
 
 %%% Iterate through subspecs
 for m=1:B
+    % Set base
     switch med
         case {'y','Y'}
+            disp('Aligning all averages to the median of the averages.');
+            base=op_median(in);
+        case {'a','A'}
             disp('Aligning all averages to the Average of the averages.');
             base=op_averaging(in);
-            base=op_freqrange(base,minppm,maxppm);
-            base=[real(base.fids(base.t>=0 & base.t<tmax,m));imag(base.fids(base.t>=0 & base.t<tmax,m))];
-            ind_min=0;
         case {'n','N'}
             %First find the average that is most similar to the total average:
             inavg=op_median(in);
@@ -94,15 +95,22 @@ for m=1:B
 
             %Now set the base function using the index of the most similar average:
             disp(['Aligning all averages to average number ' num2str(ind_min) '.']);
-            base=op_freqrange(in,minppm,maxppm);
-            base=[real(base.fids(base.t>=0 & base.t<tmax,ind_min,m));imag(base.fids(base.t>=0 & base.t<tmax,ind_min,m))];
+            base=in;
             fids(:,ind_min,m)=in.fids(:,ind_min,m);
         case {'r','R'}
             disp('Aligning all averages to an externally provided reference spectrum.');
             base=ref;
-            base=op_freqrange(base,minppm,maxppm);
+    end
+
+    base=op_freqrange(base,minppm,maxppm);
+
+    % Isolate tmax points
+    switch med
+        case {'y','Y','a','A','r','R'}
             base=[real(base.fids(base.t>=0 & base.t<tmax,m));imag(base.fids(base.t>=0 & base.t<tmax,m))];
             ind_min=0;
+        case {'n','N'}
+            base=[real(base.fids(base.t>=0 & base.t<tmax,ind_min,m));imag(base.fids(base.t>=0 & base.t<tmax,ind_min,m))];
     end
 
     % Change max iteration warning to error temporarily - JND 12/6/24
