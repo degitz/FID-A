@@ -61,6 +61,7 @@ end
 [tmax, tmax_est, med, ref] = parseInputs(in, varargin{:});
 
 %%% Initialize data
+dwelltime = in.dwelltime;
 parsFit=[0,0];
 
 if in.dims.subSpecs==0
@@ -140,7 +141,6 @@ out.flags.freqcorrected=1;
         p=pars(2);     %Phase Shift [deg]
         
         
-        dwelltime=in.dwelltime;
         t=0:dwelltime:(length(input)-1)*dwelltime;
         fid=input(:);
         
@@ -156,7 +156,6 @@ out.flags.freqcorrected=1;
         p=pars(2);     %Phase Shift [deg]
         
         
-        dwelltime=in.dwelltime;
         t=0:dwelltime:(length(input)-1)*dwelltime;
         fid=input(:);
         

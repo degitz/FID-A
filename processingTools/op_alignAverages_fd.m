@@ -60,6 +60,7 @@ end
 [tmax, tmax_est, med, ref, minppm, maxppm] = parseInputs(in0, in, varargin{:});
 
 %%% Initialize data
+dwelltime = in.dwelltime;
 parsFit=[0,0];
 
 if in.dims.subSpecs==0
@@ -108,6 +109,7 @@ for m=1:B
             %parsGuess(1)=parsGuess(1);
             %disp(['fitting subspec number ' num2str(m) ' and average number ' num2str(n)]);
             datarange=op_freqrange(in,minppm,maxppm);
+            dwelltime_dr=datarange.dwelltime;
             start=datarange.fids(datarange.t>=0 & datarange.t<tmax,n,m);
             parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexRangeNest,parsGuess);
             fids(:,n,m)=op_freqPhaseShiftNest(parsFit,in.fids(:,n,m));
@@ -139,8 +141,7 @@ out.flags.freqcorrected=1;
         p=pars(2);     %Phase Shift [deg]
         
         
-        dwelltime=datarange.dwelltime;
-        t=0:dwelltime:(length(input)-1)*dwelltime;
+        t=0:dwelltime_dr:(length(input)-1)*dwelltime_dr;
         fid=input(:);
         
         shifted=addphase(fid.*exp(1i*t'*f*2*pi),p);
@@ -155,7 +156,6 @@ out.flags.freqcorrected=1;
         p=pars(2);     %Phase Shift [deg]
         
         
-        dwelltime=in.dwelltime;
         t=0:dwelltime:(length(input)-1)*dwelltime;
         fid=input(:);
         
