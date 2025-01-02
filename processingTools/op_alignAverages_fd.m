@@ -54,6 +54,7 @@ if nargin<6
     end
 end
 
+%%% Initialize data
 parsFit=[0,0];
 
 if in.dims.subSpecs==0
@@ -65,6 +66,8 @@ end
 fs=zeros(in.sz(in.dims.averages),B);
 phs=zeros(in.sz(in.dims.averages),B);
 fids=zeros(in.sz(in.dims.t),1,B);
+
+%%% Iterate through subspecs
 for m=1:B
     if med=='y' || med=='Y'
         disp('Aligning all averages to the Average of the averages.');
@@ -82,8 +85,7 @@ for m=1:B
         end
         [temp,ind_min]=min(metric(:,m));
         
-        %Now set the base function using the index of the most similar
-        %average:
+        %Now set the base function using the index of the most similar average:
         disp(['Aligning all averages to average number ' num2str(ind_min) '.']);
         base=op_freqrange(in,minppm,maxppm);
         base=[real(base.fids(base.t>=0 & base.t<tmax,ind_min,m));imag(base.fids(base.t>=0 & base.t<tmax,ind_min,m))];

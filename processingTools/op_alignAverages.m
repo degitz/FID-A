@@ -89,6 +89,7 @@ else
         end
     end
     
+    %%% Initialize data
     if in.dims.subSpecs==0
         B=1;
     else
@@ -98,6 +99,8 @@ else
     fs=zeros(in.sz(in.dims.averages),B);
     phs=zeros(in.sz(in.dims.averages),B);
     fids=zeros(in.sz(in.dims.t),1,B);
+
+    %%% Iterate through subspecs
     for m=1:B
         if med=='y' || med=='Y'
             disp('Aligning all averages to the median of the averages.');
