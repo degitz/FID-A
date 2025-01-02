@@ -43,8 +43,15 @@
 
 function [out,fs,phs,tmax_est]=op_alignAverages_fd(in,varargin)
 
-if ~in.flags.addedrcvrs
-    error('ERROR:  I think it only makes sense to do this after you have combined the channels using op_addrcvrs.  ABORTING!!');
+%%% Temporarily combine data for processing - JND 8/28/2024
+in0 = in;
+if in0.dims.coils ~= 0 && in0.dims.averages ~= in0.dims.coils % check if averages dim == coils dim to avoid bugs
+    combFLAG = true;
+
+    % Combine channels
+    in = op_addrcvrs(in0);
+else
+    combFLAG = false;
 end
 
 if in.dims.averages==0
@@ -71,7 +78,11 @@ end
 
 fs=zeros(in.sz(in.dims.averages),B);
 phs=zeros(in.sz(in.dims.averages),B);
-fids=zeros(in.sz(in.dims.t),1,B);
+if combFLAG % Added to make compatible with multiple channels - JND 8/28/2024
+    fids=zeros(in0.sz(in0.dims.t),in0.sz(in0.dims.coils),1,B);
+else
+    fids=zeros(in.sz(in.dims.t),1,B);
+end
 
 %%% Iterate through subspecs
 for m=1:B
@@ -96,7 +107,11 @@ for m=1:B
             %Now set the base function using the index of the most similar average:
             disp(['Aligning all averages to average number ' num2str(ind_min) '.']);
             base=in;
-            fids(:,ind_min,m)=in.fids(:,ind_min,m);
+            if combFLAG % Added to make compatible with multiple channels - JND 8/28/2024
+                fids(:,:,ind_min,m)=in0.fids(:,:,ind_min,m);
+            else
+                fids(:,ind_min,m)=in.fids(:,ind_min,m);
+            end
         case {'r','R'}
             disp('Aligning all averages to an externally provided reference spectrum.');
             base=ref;
@@ -143,7 +158,13 @@ for m=1:B
                 parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexRangeNest,parsGuess,opts);
             end
 
-            fids(:,n,m)=op_freqPhaseShiftNest(parsFit,in.fids(:,n,m));
+            if combFLAG % Added to make compatible with multiple channels - JND 8/28/2024
+                for cc = 1:in0.sz(in0.dims.coils)
+                    fids(:,cc,n,m)=op_freqPhaseShiftNest(parsFit,squeeze(in0.fids(:,cc,n,m)));
+                end
+            else
+                fids(:,n,m)=op_freqPhaseShiftNest(parsFit,in.fids(:,n,m));
+            end
             fs(n,m)=parsFit(1);
             phs(n,m)=parsFit(2);
             %plot(in.ppm,fftshift(ifft(fids(:,1,m))),in.ppm,fftshift(ifft(fids(:,n,m))));
@@ -154,16 +175,16 @@ end
 warning('on','stats:nlinfit:IterationLimitExceeded'); % Restore the warnings back to their previous (non-error) state - JND 12/6/24
 
 %re-calculate Specs using fft
-specs=fftshift(ifft(fids,[],in.dims.t),in.dims.t);
+specs=fftshift(ifft(fids,[],in0.dims.t),in0.dims.t);
 
 
 %FILLING IN DATA STRUCTURE
-out=in;
+out=in0;
 out.fids=fids;
 out.specs=specs;
 
 %FILLING IN THE FLAGS
-out.flags=in.flags;
+out.flags=in0.flags;
 out.flags.writtentostruct=1;
 out.flags.freqcorrected=1;
 
