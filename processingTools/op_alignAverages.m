@@ -106,10 +106,10 @@ for m=1:B
     % Isolate tmax points
     switch med
         case {'y','Y','a','A','r','R'}
-            base=[real(base.fids( in.t>=0 & in.t<tmax ,m));imag(base.fids( in.t>=0 & in.t<tmax ,m))];
+            base=[real(base.fids(base.t>=0 & base.t<tmax,m));imag(base.fids(base.t>=0 & base.t<tmax,m))];
             ind_min=0;
         case {'n','N'}
-            base=[real(base.fids(in.t>=0 & in.t<tmax,ind_min,m));imag(base.fids(in.t>=0 & in.t<tmax,ind_min,m))];
+            base=[real(base.fids(base.t>=0 & base.t<tmax,ind_min,m));imag(base.fids(base.t>=0 & base.t<tmax,ind_min,m))];
     end
 
     % Change max iteration warning to error temporarily - JND 12/6/24
