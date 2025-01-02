@@ -104,15 +104,37 @@ for m=1:B
             base=[real(base.fids(base.t>=0 & base.t<tmax,m));imag(base.fids(base.t>=0 & base.t<tmax,m))];
             ind_min=0;
     end
+
+    % Change max iteration warning to error temporarily - JND 12/6/24
+    warning('error','stats:nlinfit:IterationLimitExceeded');
+    opts = statset('nlinfit'); opts.MaxIter = 400; maxitFLAG = false;
+
+    %%% Fit data
+    datarange=op_freqrange(in,minppm,maxppm);
+    dwelltime_dr=datarange.dwelltime;
     for n=1:in.sz(in.dims.averages)
         if n~=ind_min
             parsGuess=parsFit;
             %parsGuess(1)=parsGuess(1);
             %disp(['fitting subspec number ' num2str(m) ' and average number ' num2str(n)]);
-            datarange=op_freqrange(in,minppm,maxppm);
-            dwelltime_dr=datarange.dwelltime;
             start=datarange.fids(datarange.t>=0 & datarange.t<tmax,n,m);
-            parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexRangeNest,parsGuess);
+
+            % Increase max iterations if it is reached - JND 12/6/24
+            if ~maxitFLAG
+                try
+                    parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexRangeNest,parsGuess);
+                catch ME
+                    switch ME.identifier
+                        case 'stats:nlinfit:IterationLimitExceeded'
+                            maxitFLAG = true;
+                            warning('on','stats:nlinfit:IterationLimitExceeded'); % Temporarily restore the warnings back to their previous (non-error) state - JND 12/6/24
+                            parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexRangeNest,parsGuess,opts);
+                    end
+                end
+            else
+                parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexRangeNest,parsGuess,opts);
+            end
+
             fids(:,n,m)=op_freqPhaseShiftNest(parsFit,in.fids(:,n,m));
             fs(n,m)=parsFit(1);
             phs(n,m)=parsFit(2);
@@ -121,6 +143,7 @@ for m=1:B
     end
 end
 
+warning('on','stats:nlinfit:IterationLimitExceeded'); % Restore the warnings back to their previous (non-error) state - JND 12/6/24
 
 %re-calculate Specs using fft
 specs=fftshift(ifft(fids,[],in.dims.t),in.dims.t);

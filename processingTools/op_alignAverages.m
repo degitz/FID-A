@@ -97,8 +97,7 @@ for m=1:B
             end
             [temp,ind_min]=min(metric(:,m));
 
-            %Now set the base function using the index of the most similar
-            %average:
+            %Now set the base function using the index of the most similar average:
             disp(['Aligning all averages to average number ' num2str(ind_min) '.']);
             base=[real(in.fids(in.t>=0 & in.t<tmax,ind_min,m));imag(in.fids(in.t>=0 & in.t<tmax,ind_min,m))];
             fids(:,ind_min,m)=in.fids(:,ind_min,m);
@@ -108,11 +107,34 @@ for m=1:B
             base=[real(base.fids( in.t>=0 & in.t<tmax ,m));imag(base.fids( in.t>=0 & in.t<tmax ,m))];
             ind_min=0;
     end
+
+    % Change max iteration warning to error temporarily - JND 12/6/24
+    warning('error','stats:nlinfit:IterationLimitExceeded');
+    opts = statset('nlinfit'); opts.MaxIter = 400; maxitFLAG = false;
+
+    %%% Fit data
     for n=1:in.sz(in.dims.averages)
         if n~=ind_min
             parsGuess=parsFit;
             %disp(['fitting subspec number ' num2str(m) ' and average number ' num2str(n)]);
-            parsFit=nlinfit(in.fids(in.t>=0 & in.t<tmax,n,m),base,@op_freqPhaseShiftComplexNest,parsGuess);
+            start=in.fids(in.t>=0 & in.t<tmax,n,m);
+
+            % Increase max iterations if it is reached - JND 12/6/24
+            if ~maxitFLAG
+                try
+                    parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexNest,parsGuess);
+                catch ME
+                    switch ME.identifier
+                        case 'stats:nlinfit:IterationLimitExceeded'
+                            maxitFLAG = true;
+                            warning('on','stats:nlinfit:IterationLimitExceeded'); % Restore the warnings back to their previous (non-error) state - JND 12/6/24
+                            parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexNest,parsGuess,opts);
+                    end
+                end
+            else
+                parsFit=nlinfit(start,base,@op_freqPhaseShiftComplexNest,parsGuess,opts);
+            end
+
             fids(:,n,m)=op_freqPhaseShiftNest(parsFit,in.fids(:,n,m));
             fs(n,m)=parsFit(1);
             phs(n,m)=parsFit(2);
@@ -121,6 +143,7 @@ for m=1:B
     end
 end
 
+warning('on','stats:nlinfit:IterationLimitExceeded'); % Restore the warnings back to their previous (non-error) state - JND 12/6/24
 
 %re-calculate Specs using fft
 specs=fftshift(ifft(fids,[],in.dims.t),in.dims.t);
