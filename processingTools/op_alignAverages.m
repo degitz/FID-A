@@ -42,7 +42,7 @@
 % phs       = Vector of phase shifts (in degrees) used for alignment.
 
 
-function [out,fs,phs]=op_alignAverages(in,tmax,med,initPars)
+function [out,fs,phs]=op_alignAverages(in,tmax,med,ref)
 
 if ~in.flags.addedrcvrs
     error('ERROR:  I think it only makes sense to do this after you have combined the channels using op_addrcvrs.  ABORTING!!');
@@ -107,7 +107,7 @@ end
             base=op_median(in);
             base=[real(base.fids( in.t>=0 & in.t<tmax ,m));imag(base.fids( in.t>=0 & in.t<tmax ,m))];
             ind_min=0;
-        elseif med=='a' || med=='a'
+        elseif med=='a' || med=='A'
             disp('Aligning all averages to the average of the averages.');
             base=op_averaging(in);
             base=[real(base.fids( in.t>=0 & in.t<tmax ,m));imag(base.fids( in.t>=0 & in.t<tmax ,m))];
