@@ -15,8 +15,10 @@
 % 
 % INPUTS:
 % in        = Input data structure.
-% minppm	= Minimum of frequency range (ppm).
-% maxppm	= Maximum of frequnecy range (ppm).
+% minppm	= Minimum of frequency range (ppm). (Optional. Default depends
+%             on nucleus)
+% maxppm	= Maximum of frequnecy range (ppm). (Optional. Default depends
+%             on nucleus)
 % tmax      = Maximum time (s) in time domain to use for alignment.
 %             (Optional.  Default is the time at which SNR drops below 5)
 % med       = Align averages to the median of the averages? ('y','n', 'a', or 
@@ -39,19 +41,10 @@
 % fs        = Vector of frequency shifts (in Hz) used for alignment.
 % phs       = Vector of phase shifts (in degrees) used for alignment.
 
-function [out,fs,phs]=op_alignAverages_fd(in,minppm,maxppm,tmax,med,ref)
+function [out,fs,phs,tmax_est]=op_alignAverages_fd(in,varargin)
 
 if ~in.flags.addedrcvrs
     error('ERROR:  I think it only makes sense to do this after you have combined the channels using op_addrcvrs.  ABORTING!!');
-end
-
-if nargin<6
-    ref=struct();
-    if nargin<5
-        med='y';
-    elseif (strcmp(med,'r') || strcmp(med,'R'))
-        error('ERROR:  If using the ''r'' option for input variable ''med'', then a 6th input argument must be provided');
-    end
 end
 
 if in.dims.averages==0
@@ -62,6 +55,9 @@ if in.dims.averages==0
     phs=0;
     return
 end
+
+%%% Parse inputs - JND 9/2/2024
+[tmax, tmax_est, med, ref, minppm, maxppm] = parseInputs(in0, in, varargin{:});
 
 %%% Initialize data
 parsFit=[0,0];
@@ -166,5 +162,121 @@ out.flags.freqcorrected=1;
         y=addphase(fid.*exp(1i*t'*f*2*pi),p);
         %y=real(fid.*exp(-1i*t'*f*2*pi));
         
+    end
+
+    function [tmax, tmax_est, med, ref, minppm, maxppm] = parseInputs(in, varargin)
+        CHECK_minp = true;
+        CHECK_maxp = true;
+        CHECK_tmx = true;
+        CHECK_med = true;
+        CHECK_ref = true;
+        for i = 1:nargin-2
+            % Check for minppm input
+            if strcmpi(varargin{i}, 'minppm') && CHECK_minp
+                % Remove input from options
+                CHECK_minp = false;
+
+                % Save variable
+                minppm = varargin{i+1};
+
+            % Check for maxppm input
+            elseif strcmpi(varargin{i}, 'maxppm') && CHECK_maxp
+                % Remove input from options
+                CHECK_maxp = false;
+
+                % Save variable
+                maxppm = varargin{i+1};
+
+            % Check for tmax input
+            elseif strcmpi(varargin{i}, 'tmax') && CHECK_tmx
+                % Remove input from options
+                CHECK_tmx = false;
+
+                % Save variable
+                tmax = varargin{i+1};
+                tmax_est = NaN;
+
+            % Check for ref input
+            elseif strcmpi(varargin{i}, 'ref') && CHECK_ref
+                % Remove input from options
+                CHECK_ref = false;
+
+                % Save variable
+                ref = varargin{i+1};
+
+            % Check for med input
+            elseif strcmpi(varargin{i}, 'med') && CHECK_med
+                % Remove input from options
+                CHECK_med = false;
+
+                % Save variable
+                med = varargin{i+1};
+            end
+        end
+
+        % Add default options based on which inputs weren't grabbed
+        if CHECK_ref; ref = struct(); end
+        if CHECK_med; med = 'n'; end
+        if CHECK_tmx
+            % Find the time at which the SNR drops below 5
+            disp('tmax not supplied.  Calculating tmax....');
+
+            % Calculate SNR
+            sig = abs(in.fids);
+            noise = std(real(in.fids(ceil(0.75*end):end,:,:)),[]);
+            noise = mean(mean(mean(noise,2),3),4);
+            snr = sig/noise;
+
+            % Find tmax
+            tmax_est = zeros(in.sz(in.dims.averages),1);
+            for nn = 1:in.sz(in.dims.averages) % Changed for readability - JND 9/2/2024
+                if any(snr(:,nn)>5)
+                    N = find(snr(:,nn)>5);
+                elseif any(snr(:,nn)>4)
+                    N = find(snr(:,nn)>4);
+                else % End loop if SNR is less than four - ETV 2024
+                    % error('SNR is too low to perform frequency drift correction. Try again with a different file or without performing the correction')
+                    [~, N] = max(snr(:,nn));
+                end
+                tmax_est(nn) = in.t(N(end));
+            end
+            tmax = median(tmax_est);
+            disp(['tmax = ' num2str(tmax*1000) 'ms']);
+        end
+        if strcmpi(med,'r') % Combined to conditions into case-insensitive condition - JND 8/27/2024
+            if CHECK_ref
+                error('ERROR:  If using the ''r'' option for input variable ''med'', then a 4th input argument must be provided');
+            end
+        end
+        if CHECK_minp
+            disp('Min ppm not supplied. It will be automatically selected based on the given nucleus.');
+            % Check nucleus
+            switch in.nucleus
+                case '31P'
+                    minppm = -1;
+                case '1H'
+                    % Check for water suppression
+                    if strcmpi(in.hdr.Dicom.tScanOptions,'WS')
+                        minppm = 1.0;
+                    else
+                        minppm = 4.2;
+                    end
+            end
+        end
+        if CHECK_maxp
+            disp('Max ppm not supplied. It will be automatically selected based on the given nucleus.');
+            % Check nucleus
+            switch in.nucleus
+                case '31P'
+                    maxppm = 1;
+                case '1H'
+                    % Check for water suppression
+                    if strcmpi(in.hdr.Dicom.tScanOptions,'WS')
+                        maxppm = 2.0;
+                    else
+                        maxppm = 5.2;
+                    end
+            end
+        end
     end
 end
