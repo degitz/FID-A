@@ -39,13 +39,15 @@ function [out,out_w]=io_loadspec_twix(filename, varargin);
 %This code assumes that the data of interest is in the last element of the 
 %cell array (possibly a bad assumption under some circumstances):
 
-[rmosFLAG, zipFLAG] = parseInputs(varargin{:}); % JND 12/19/2024
+[rmosFLAG, zipFLAG, twix_obj] = parseInputs(varargin{:}); % JND 12/19/2024
 
-if rmosFLAG % Added - JND 08/20/24
-    twix_obj=mapVBVD(filename, 'rmos');
-    twix_obj.image.flagRemoveOS = true; % to remove oversampling ADDED BY EV 01/02/24 for testing
-else
-    twix_obj=mapVBVD(filename);
+if isempty(twix_obj)
+    if rmosFLAG % Added - JND 08/20/24
+        twix_obj=mapVBVD(filename, 'rmos');
+        twix_obj.image.flagRemoveOS = true; % to remove oversampling ADDED BY EV 01/02/24 for testing
+    else
+        twix_obj=mapVBVD(filename);
+    end
 end
 
 if isstruct(twix_obj)
@@ -662,9 +664,10 @@ else
     out_w=struct();
 end
 
-function [rmosFLAG, zipFLAG] = parseInputs(varargin)
+function [rmosFLAG, zipFLAG, twix] = parseInputs(varargin)
     CHECK_os = true; % Added - JND 08/20/24
     CHECK_zip = true;
+    CHECK_twix = true; 
     i = 1;
     while i < nargin
         % Check for OS input
@@ -692,8 +695,21 @@ function [rmosFLAG, zipFLAG] = parseInputs(varargin)
                 % Save variable
                 zipFLAG = varargin{i+1};
             end
-        end
     
+        % Check for twix input
+        elseif strcmpi(varargin{i}, 'twix') && CHECK_twix
+            % Remove input from options
+            CHECK_twix = false;
+
+            % Ensure it is a logical
+            if ~isstruct(varargin{i+1})
+                error('TWIX option must be a data structure.')
+            else
+                % Save variable
+                twix = varargin{i+1};
+            end
+        end
+
         % Shift forward indexer
         i = i+1;
     end
@@ -701,5 +717,6 @@ function [rmosFLAG, zipFLAG] = parseInputs(varargin)
     % Add default options based on which inputs weren't grabbed
     if CHECK_os; rmosFLAG = true; end
     if CHECK_zip; zipFLAG = false; end
+    if CHECK_twix; twix = []; end
     
 %DONE
