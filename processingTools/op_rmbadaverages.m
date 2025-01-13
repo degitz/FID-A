@@ -59,7 +59,9 @@ elseif domain=='f' || domain=='F'
 end
 %inavg=op_averaging(infilt);
 inavg=op_median(infilt);
-trange=(infilt.t>=0 & infilt.t<=tmax);
+if domain=='t' || domain=='T'
+    trange=(infilt.t>=0 & infilt.t<=tmax);
+end
 for n=1:in.sz(in.dims.averages)
     for m=1:SS
         if domain=='t' || domain=='T'
