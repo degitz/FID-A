@@ -29,9 +29,11 @@ end
 % Temporarily combine averages - JND 9/2/2024
 if inw.dims.averages~=0
     warning('WARNING: Averages will be temporarily combined to perform ecc.')
+    combinedFLAG = true;
     in_ca = op_averaging(in);
     inw_ca = op_averaging(inw);
 else
+combinedFLAG = false;
     in_ca = in;
     inw_ca = inw;
 end
@@ -41,6 +43,7 @@ inph=double(phase(inw_ca.fids));
 figure; plot(inw_ca.t,inph);
 
 %choose the part of the phase function that is most linear
+disp('Identify a section of linear values')
 tmin=input('input min t value: ');
 tmax=input('input max t value: ');
 figure;
@@ -73,7 +76,7 @@ outw.specs=fftshift(ifft(outw.fids,[],out.dims.t),out.dims.t);
 outw=op_addphase(outw,180*ecphase(1)/pi);
 
 % Temporarily combine averages - JND 9/2/2024
-if ~caFLAG
+if combinedFLAG
     out_ca = op_averaging(out);
     outw_ca = op_averaging(outw);
 else
