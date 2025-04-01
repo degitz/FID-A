@@ -15,7 +15,6 @@
 % INPUTS:
 % in     = water suppressed input data in matlab structure format.
 % inw    = water unsuppressed input data in matlab structure format.
-% caFLAG = OPTIONAL. Boolean flag that signifies averages are not combined - JND 9/2/2024
 %
 % OUTPUTS:
 % out    = Water suppressed output following eddy current correction  
@@ -26,18 +25,10 @@ function [out,outw]=op_ecc(in,inw,caFLAG);
 if inw.dims.coils~=0 || inw.dims.subSpecs~=0
     error('ERROR:  Must combine receivers and subspecs prior to running ecc!! ABORTING!!');
 end
-if inw.dims.averages~=0
-    if nargin < 3
-        error('ERROR:  Must combine averages prior to running ecc!! ABORTING!!');
-    end
-elseif ~caFLAG
-    error('ERROR:  Must combine averages prior to running ecc!! ABORTING!!');
-else
-    warning('WARNING: Averages will be temporarily combined to perform ecc.')
-end
 
 % Temporarily combine averages - JND 9/2/2024
-if ~caFLAG
+if inw.dims.averages~=0
+    warning('WARNING: Averages will be temporarily combined to perform ecc.')
     in_ca = op_averaging(in);
     inw_ca = op_averaging(inw);
 else
