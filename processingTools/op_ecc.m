@@ -22,20 +22,29 @@
 
 function [out,outw]=op_ecc(in,inw,caFLAG);
 
-if inw.dims.coils~=0 || inw.dims.subSpecs~=0
-    error('ERROR:  Must combine receivers and subspecs prior to running ecc!! ABORTING!!');
+if inw.dims.subSpecs~=0
+    error('ERROR:  Must combine subspecs prior to running ecc!! ABORTING!!');
+end
+
+% Temporarily combine channels - JND 4/1/2025
+if inw.dims.coils~=0
+    warning('WARNING: Channels will be temporarily combined to perform ecc.')
+    CHcombinedFLAG = true;
+    [in_ca,inw_ca]=op_combineRcvrs(in,inw);
+else
+    CHcombinedFLAG = false;
+    in_ca = in;
+    inw_ca = inw;
 end
 
 % Temporarily combine averages - JND 9/2/2024
 if inw.dims.averages~=0
     warning('WARNING: Averages will be temporarily combined to perform ecc.')
-    combinedFLAG = true;
-    in_ca = op_averaging(in);
-    inw_ca = op_averaging(inw);
+    AVcombinedFLAG = true;
+    in_ca = op_averaging(in_ca);
+    inw_ca = op_averaging(inw_ca);
 else
-combinedFLAG = false;
-    in_ca = in;
-    inw_ca = inw;
+    AVcombinedFLAG = false;
 end
 
 %save the phase as a vector of hard numbers.
@@ -75,13 +84,18 @@ outw.fids=outw.fids.*exp(1i*-ecphase);
 outw.specs=fftshift(ifft(outw.fids,[],out.dims.t),out.dims.t);
 outw=op_addphase(outw,180*ecphase(1)/pi);
 
-% Temporarily combine averages - JND 9/2/2024
-if combinedFLAG
-    out_ca = op_averaging(out);
-    outw_ca = op_averaging(outw);
+% Temporarily combine channels - JND 4/1/2025
+if CHcombinedFLAG
+    [out_ca,outw_ca]=op_combineRcvrs(out,outw);
 else
     out_ca = out;
     outw_ca = outw;
+end
+
+% Temporarily combine averages - JND 9/2/2024
+if AVcombinedFLAG
+    out_ca = op_averaging(out_ca);
+    outw_ca = op_averaging(outw_ca);
 end
 
 % Plot data
