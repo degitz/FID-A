@@ -49,13 +49,13 @@ end
 
 %save the phase as a vector of hard numbers.
 inph=double(phase(inw_ca.fids));
-figure; plot(inw_ca.t,inph);
+figure; plot(inw_ca.t,inph); title('Phase of Water Suppressed Data')
+axis tight; ylim([-180 180]); xlabel('Time (sec)'); ylabel('Phase (degrees)');
 
 %choose the part of the phase function that is most linear
 disp('Identify a section of linear values')
 tmin=input('input min t value: ');
 tmax=input('input max t value: ');
-figure;
 
 %now fit a straight line to the linear part of the phase function
 p=polyfit(inw_ca.t(inw_ca.t>tmin & inw_ca.t<tmax), inph(inw_ca.t>tmin & inw_ca.t<tmax)',1);
@@ -68,9 +68,8 @@ pp=splinefit(inw_ca.t,inph,150);
 ecphase=ppval(pp,inw_ca.t)'-polyval(p,inw_ca.t)';
 sz=size(in_ca.fids);
 ecphase_rep=repmat(ecphase,[1 sz(2:end)]);
-figure;
-plot(inw_ca.t,ecphase);
-
+figure; plot(inw_ca.t,ecphase); title('Eddy Current Related Phase Offset')
+axis tight; ylim([-180 180]); xlabel('Time (sec)'); ylabel('Phase (degrees)');
 
 %Now apply the eddy current correction to both the water suppressed and the
 %water unsuppressed data:
@@ -99,7 +98,8 @@ if AVcombinedFLAG
 end
 
 % Plot data
-figure;
-plot(out_ca.t,phase(out_ca.fids)); title('Phase of Water suppressed data') 
-figure;
+figure; plot(out_ca.t,phase(out_ca.fids)); title('Phase of Corrected Water Suppressed Data') 
+axis tight; ylim([-180 180]); xlabel('Time (sec)'); ylabel('Phase (degrees)');
+figure; plot(outw_ca.t,phase(outw_ca.fids));title('Phase of Corrected Water Unsuppressed Data') 
+axis tight; ylim([-180 180]); xlabel('Time (sec)'); ylabel('Phase (degrees)');
 plot(outw_ca.t,phase(outw_ca.fids));title('Phase of Water unsuppressed data') 
