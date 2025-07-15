@@ -4,16 +4,16 @@
 %   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
-% [SNR]=op_getSNR(in,NAAppmmin,NAAppmmax,noiseppmmin,noiseppmmax,suppressPlots);
+% [SNR]=op_getSNR(in,signalppmmin,signalppmmax,noiseppmmin,noiseppmmax,suppressPlots);
 % 
 % DESCRIPTION:
-% Find the SNR of the NAA peak in a spectrum.
+% Find the SNR of the main peak in a spectrum. This is typically NAA for 1H.
 % 
 % INPUTS:
 % in             = input data in matlab structure format
-% NAAppmmin      = min of frequncy range in which to search for NAA peak.
+% signalppmmin      = min of frequncy range in which to search for main peak.
 %                  (Optional.  Default = 1.8 ppm);
-% NAAppmmax      = max of frequncy range in which to search for NAA peak.
+% signalppmmax      = max of frequncy range in which to search for main peak.
 %                  (Optional.  Default = 2.2 ppm);
 % noiseppmmin    = min of frequency range in which to measure noise.
 %                  (Optional.  Default = -2 ppm);
@@ -27,7 +27,7 @@
 % signal         = The measured raw signal intensity
 % noisesd        = The measured noise standard deviation
 
-function [SNR,signal,noisesd]=op_getSNR(in,NAAppmmin,NAAppmmax,noiseppmmin,noiseppmmax,suppressPlots);
+function [SNR,signal,noisesd]=op_getSNR(in,signalppmmin,signalppmmax,noiseppmmin,noiseppmmax,suppressPlots);
 
 if nargin<6
     suppressPlots=false;
@@ -36,27 +36,31 @@ if nargin<6
         if nargin<4
             noiseppmmin=-2;
             if nargin<3
-                NAAppmmax=2.2;
+                signalppmmax=2.2;
                 if nargin<2
-                    NAAppmmin=1.8;
+                    signalppmmin=1.8;
                 end
             end
         end
     end
 end
 
+% Average data if not already done
+if ~in.flags.averaged
+    in = op_averaging(in);
+end
 
 %FIRST FIND THE NAA SIGNAL INTENSITY.  USE THE MAX PEAK HEIGHT OF THE 
 %MAGNITUDE SPECTRUM INSIDE THE DESIRED SPECTRAL RANGE:
-NAAwindow=in.specs(in.ppm>NAAppmmin & in.ppm<NAAppmmax);
-ppmwindow=in.ppm(in.ppm>NAAppmmin & in.ppm<NAAppmmax);
+signalwindow=in.specs(in.ppm>signalppmmin & in.ppm<signalppmmax);
+ppmwindow=in.ppm(in.ppm>signalppmmin & in.ppm<signalppmmax);
 
-maxNAA_index=find(abs(NAAwindow)==max(abs((NAAwindow))));
-maxNAA=abs(NAAwindow(maxNAA_index));
+maxsignal_index=find(abs(signalwindow)==max(abs((signalwindow))));
+maxsignal=abs(signalwindow(maxsignal_index));
 
 if ~suppressPlots
     figure;
-    plot(ppmwindow,abs(real(NAAwindow)));
+    plot(ppmwindow,abs(real(signalwindow)));
 
     figure
     plot(in.ppm,real(in.specs));
@@ -77,13 +81,13 @@ P=polyfit(ppmwindow2,noisewindow,2);
 % Calculate SNR
 noise=noisewindow-polyval(P,ppmwindow2);
 noisesd=std(real(noise));
-signal=(maxNAA-mean(real(noisewindow))); %Removes DC offset
-%SNR=maxNAA/noisesd
+signal=(maxsignal-mean(real(noisewindow))); %Removes DC offset
+%SNR=maxsignal/noisesd
 SNR=signal/noisesd;
 
 if ~suppressPlots
     figure;
-    plot(ppmwindow,abs(real(NAAwindow)));
+    plot(ppmwindow,abs(real(signalwindow)));
 
     figure
     plot(in.ppm,real(in.specs));
