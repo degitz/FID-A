@@ -1,5 +1,7 @@
 % op_zeropad.m
 % Jamie Near, McGill University 2014.
+% Edits from
+%   Jacob Degitz, Texas A&M University 2025.
 % 
 % USAGE:
 % out=op_zeropad(in,zpFactor);
@@ -47,8 +49,10 @@ f=[(-in.spectralwidth/2)+(in.spectralwidth/(2*sz(1))):...
     in.spectralwidth/(sz(1)):...
     (in.spectralwidth/2)-(in.spectralwidth/(2*sz(1)))];
 
-ppm=-f/(in.Bo*42.577);
-ppm=ppm+4.65;
+ppm=-f/(in.Bo*in.gamma); % Added multinuclear support
+if in.gamma > 42
+    ppm=ppm+4.65;
+end
 
 t=[0:in.dwelltime:(sz(1)-1)*in.dwelltime];
 
