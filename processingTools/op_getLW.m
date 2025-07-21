@@ -1,23 +1,26 @@
 % op_getLW.m
 % Jamie Near, McGill University 2014.
+%Edits from
+%   Jacob Degitz, Texas A&M University 2025.
 % 
 % USAGE:
 % [FWHM]=op_getLW(in,Refppmmin,Refppmmax,zpfactor,suppressPlots);
 % 
 % DESCRIPTION:
 % Estimates the linewidth of a reference peak in the spectrum.  By default, 
-% the reference peak is water, between 4.4 and 5.0 ppm.  Two methods are
-% used to estimate the linewidth:  1.  FWHM is measured by simply taking the
-% full width at half max of the reference peak.  2.  The FWHM is measured by
-% fitting the reference peak to a lorentzian lineshape and determine the FWHM of the
+% the reference peak is either: between 4.4 and 5.0 ppm for 1H, or between
+% -0.5 and 0.5 ppm for all other nuclei.  Two methods are used to estimate
+% the linewidth:  1.  FWHM is measured by simply taking the full width at
+% half max of the reference peak.  2.  The FWHM is measured by fitting the
+% reference peak to a lorentzian lineshape and determine the FWHM of the
 % best fit.  The output FWHM is given by the average of these two measures.
 % 
 % INPUTS:
 % in            = input spectrum in structure format.
 % Refppmmin     = Min of frequency range (ppm) in which to search for reference peak.
-%                  (Optional.  Default = 4.4 ppm);
+%                  (Optional.  Default = 4.4 or -0.5 ppm, depending on gamma);
 % Refppmmax     = Max of frequency range to (ppm) in which search for reference peak
-%                  (Optional.  Default = 5/3 ppm per Tesla B0);
+%                  (Optional.  Default = 5.0 or 0.5 ppm, depending on gamma);
 % zpfactor      = zero-padding factor (used for method 1.)
 %                  (Optional.  Default = 8);
 % suppressPlots = Boolean to suppress plotting results. 
@@ -61,17 +64,17 @@ end
 gtHalfMax=find(abs(real(Refwindow)) >= 0.5*abs(maxRef));
 
 FWHM1=ppmwindow(gtHalfMax(1)) - ppmwindow(gtHalfMax(end));
-FWHM1=FWHM1*(42.577*in.Bo);  %Assumes proton.
+FWHM1=FWHM1*(in.gamma*in.Bo);
 
 
 %METHOD 2:  FIT WATER PEAK TO DETERMINE FWHM PARAM
 sat='n';
-waterFreq=ppmwindow(maxRef_index);
+centFreq=ppmwindow(maxRef_index);
 while sat=='n'
     parsGuess=zeros(1,5);
     parsGuess(1)=maxRef; %AMPLITUDE
-    parsGuess(2)=(5*in.Bo/3)/(42.577*in.Bo); %FWHM.  Assumes Proton.  LW = 5/3 Hz/T.
-    parsGuess(3)=waterFreq; %FREQUENCY
+    parsGuess(2)=(5*in.Bo/3)/(in.gamma*in.Bo); %FWHM. LW = 5/3 Hz/T.
+    parsGuess(3)=centFreq; %FREQUENCY
     parsGuess(4)=0; %Baseline Offset
     parsGuess(5)=0; %Phase
     
@@ -89,7 +92,7 @@ while sat=='n'
             sat='y';
         end
         if sat=='n';
-            waterFreq=input('input new water frequency guess: ');
+            centFreq=input('input new center frequency guess: ');
         end
     else
         sat='y';
@@ -99,7 +102,7 @@ end
 
 
 FWHM2=abs(parsFit(2));
-FWHM2=FWHM2*(42.577*in.Bo);  %Assumes Proton.
+FWHM2=FWHM2*(in.gamma*in.Bo);
 
 FWHM=mean([FWHM1 FWHM2]);  
 
