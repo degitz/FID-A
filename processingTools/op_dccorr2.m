@@ -5,7 +5,7 @@
 %   Jacob Degitz, Texas A&M University 2024.
 % 
 % USAGE:
-% [out,dcOffset]=op_dccorr(in,mode,var1);
+% [out,dcOffset]=op_dccorr2(in,mode,var1);
 % 
 % DESCRIPTION:
 % Do a DC Correction on the data.  This method is a frequency domain
@@ -28,7 +28,7 @@
 % OUTPUTS:
 % out   = Output following DC correction.  
 
-function [out,dcOffset]=op_dccorr(in,mode,var1);
+function [out,dcOffset]=op_dccorr2(in,mode,var1);
 
 switch mode % Changed to structure - JND 8/21/24
     case 'p'
